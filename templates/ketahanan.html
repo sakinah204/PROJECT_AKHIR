@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+{% block title %}Uji Ketahanan - GoldenEye Evaluation{% endblock %}
+
+{% block content %}
+<div class="mb-1">
+    <h2 class="fw-bold mb-0">Uji Ketahanan Model</h2>
+    <p class="text-muted small mb-3">
+        Perbandingan tiga tahap perbaikan terhadap gangguan nilai fitur
+    </p>
+</div>
+
+{% if error %}
+<div class="alert alert-danger d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-2">Tentang Pengujian Ini</h6>
+        <p class="text-muted small mb-2">
+            Penyerang yang cerdik tidak akan mengulang pola serangan yang sama persis.
+            Ia bisa menyisipkan jeda, mengubah ukuran paket, atau memperlambat kirimannya
+            agar tidak dikenali sistem keamanan.
+        </p>
+        <p class="text-muted small mb-4">
+            Pengujian ini meniru kondisi tersebut. Angka-angka pada data uji digeser
+            sedikit secara acak, lalu diperiksa apakah model masih mengenali serangannya.
+            Besar pergeseran disesuaikan dengan sebaran masing-masing angka, sehingga
+            tingkat gangguan setara meskipun satuannya berbeda-beda.
+        </p>
+
+        <div class="row g-3">
+            {% for m in info_model %}
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="fw-semibold mb-1">
+                        <span class="badge bg-{{ m.warna }} me-1">{{ m.nama }}</span>
+                    </div>
+                    <div class="fw-semibold small mb-1">{{ m.judul }}</div>
+                    <div class="text-muted small">Menggunakan {{ m.n_fitur }} fitur</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if jumlah_model < 3 %}
+        <div class="alert alert-warning small mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Baru {{ jumlah_model }} model yang tersedia. Untuk perbandingan lengkap tiga tahap,
+            simpan <code>random_forest_gini.pkl</code>, <code>selected_features_gini.pkl</code>,
+            <code>random_forest_gabungan.pkl</code>, dan
+            <code>selected_features_gabungan.pkl</code> ke folder <code>models/</code>.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if ada_pembanding %}
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-1">Perbandingan Fitur Terpilih</h6>
+        <p class="text-muted small mb-3">
+            Kedua cara pemilihan sama-sama menghasilkan <strong>{{ n_fitur_gabungan }} fitur</strong>.
+            Sebagian fitur dipilih oleh keduanya, sebagian lagi hanya dipilih salah satunya.
+            Perbedaan inilah yang menyebabkan ketahanan kedua model berbeda.
+        </p>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <div class="border rounded p-3 h-100 text-center bg-light">
+                    <div class="text-muted small mb-1">Fitur per Metode</div>
+                    <div class="fw-bold" style="font-size:26px;">{{ n_fitur_gabungan }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="border rounded p-3 h-100 text-center">
+                    <div class="text-muted small mb-1">Dipilih Keduanya</div>
+                    <div class="fw-bold text-success" style="font-size:26px;">{{ irisan }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="border rounded p-3 h-100 text-center">
+                    <div class="text-muted small mb-1">Khas Gini</div>
+                    <div class="fw-bold text-secondary" style="font-size:26px;">{{ hanya_gini|length }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="border rounded p-3 h-100 text-center">
+                    <div class="text-muted small mb-1">Khas Gabungan</div>
+                    <div class="fw-bold text-primary" style="font-size:26px;">{{ hanya_gabungan|length }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:50%;">Hanya terpilih oleh Gini</th>
+                        <th style="width:50%;">Hanya terpilih oleh metode gabungan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set jml = [hanya_gini|length, hanya_gabungan|length]|max %}
+                    {% for i in range(jml) %}
+                    <tr>
+                        <td class="small">
+                            {% if i < hanya_gini|length %}
+                            <i class="bi bi-dash-circle text-muted me-1"></i>{{ hanya_gini[i] }}
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if i < hanya_gabungan|length %}
+                            <i class="bi bi-plus-circle text-primary me-1"></i>{{ hanya_gabungan[i] }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if fitur_bersama %}
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-secondary" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#fiturBersama">
+                <i class="bi bi-list-ul me-1"></i>
+                Lihat {{ irisan }} fitur yang dipilih keduanya
+            </button>
+            <div class="collapse mt-3" id="fiturBersama">
+                <div class="row">
+                    {% for f in fitur_bersama %}
+                    <div class="col-md-6 col-lg-4 mb-1">
+                        <span class="text-muted small">
+                            <i class="bi bi-check2 text-success me-1"></i>{{ f }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <form action="{{ url_for('ketahanan') }}" method="post" enctype="multipart/form-data" id="formKetahanan">
+            <div class="dropzone">
+                <i class="bi bi-shield-exclamation d-block mb-3"></i>
+                <h5 class="fw-bold">Unggah file CSV untuk diuji</h5>
+                <p class="text-muted mb-3">
+                    File harus memiliki kolom <code>Label</code>, karena sistem perlu
+                    mengetahui jawaban yang benar untuk menghitung ketepatan model.
+                </p>
+
+                <label for="fileKetahanan" class="btn btn-primary px-4">
+                    <i class="bi bi-file-earmark-arrow-up me-1"></i> Pilih File CSV
+                </label>
+                <input type="file" id="fileKetahanan" name="file" accept=".csv" class="d-none" required>
+
+                <div id="namaBerkas" class="fw-semibold mt-3"></div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-warning btn-lg px-5" id="tombolUji">
+                    <i class="bi bi-play-fill me-1"></i> JALANKAN UJI KETAHANAN
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if hasil %}
+
+<div class="alert alert-light border">
+    <div class="small">
+        <i class="bi bi-file-earmark-text me-1"></i>
+        <strong>{{ nama_berkas }}</strong> &middot;
+        {{ "{:,}".format(n_sampel) }} flow diuji &middot;
+        proporsi serangan {{ "%.2f"|format(proporsi_serangan * 100) }}%
+
+        {% if jumlah_diabaikan %}
+        <div class="text-warning mt-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ "{:,}".format(jumlah_diabaikan) }} baris diabaikan karena labelnya bukan
+            BENIGN maupun DoS GoldenEye. Baris tersebut tidak dihitung, sama seperti
+            perlakuan pada halaman Evaluasi.
+        </div>
+        {% endif %}
+
+        {% if diambil_sampel %}
+        <div class="text-warning mt-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            File melebihi batas pengujian, sehingga diambil sampel acak. Angka dapat
+            sedikit berbeda dari halaman Evaluasi yang memakai seluruh baris.
+        </div>
+        {% endif %}
+
+        {% if not ada_imputer %}
+        <div class="text-warning mt-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Berkas <code>imputer_final.pkl</code> tidak ditemukan. Nilai kosong diisi
+            menggunakan statistik file yang diunggah, sehingga hasil dapat berbeda
+            dari halaman Evaluasi.
+        </div>
+        {% endif %}
+
+        {% if kolom_hilang %}
+        <div class="text-danger mt-2">
+            <i class="bi bi-x-circle me-1"></i>
+            {{ kolom_hilang|length }} kolom fitur tidak ditemukan dan diisi nilai nol:
+            {{ kolom_hilang|join(', ') }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Degradasi F1-Score</h6>
+        <canvas id="grafikKetahanan" height="120"></canvas>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            {% for r in ringkas %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if loop.first %}active{% endif %}"
+                        data-bs-toggle="tab"
+                        data-bs-target="#panel-{{ r['kode'] }}"
+                        type="button" role="tab">
+                    {{ r["nama"] }}
+                    <span class="badge bg-secondary ms-1">{{ r["level_persen"] }}</span>
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="tab-content">
+            {% for r in ringkas %}
+            <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+                 id="panel-{{ r['kode'] }}" role="tabpanel">
+
+                <div class="alert alert-light border mb-4">
+                    <span class="badge bg-secondary me-2">{{ r["kategori"] }}</span>
+                    <span class="small">{{ r["keterangan"] }}</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    {% for m in info_model %}
+                    {% set nilai = r["metrik"][m.nama] %}
+                    {% if nilai %}
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <div class="mb-3">
+                                <span class="badge bg-{{ m.warna }} me-1">{{ m.nama }}</span>
+                                <span class="text-muted small">{{ m.judul }}</span>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-6 mb-2">
+                                    <div class="text-muted small">F1-Score</div>
+                                    <div class="fw-bold" style="font-size:19px;">
+                                        {{ nilai["f1"]|pct }}
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <div class="text-muted small">Recall</div>
+                                    <div class="fw-bold" style="font-size:19px;">
+                                        {{ nilai["recall"]|pct }}
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Serangan lolos</span>
+                                <span class="fw-semibold text-danger">
+                                    {{ "{:,}".format(nilai["fn"]) }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted mt-1">
+                                <span>Accuracy</span>
+                                <span>{{ nilai["accuracy"]|pct }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted mt-1">
+                                <span>Precision</span>
+                                <span>{{ nilai["precision"]|pct }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if r.get("rasio") %}
+                <div class="border-start border-4 border-primary ps-3">
+                    <div class="small text-muted">
+                        Pada tingkat gangguan ini, cara ketiga mengenali serangan
+                        <strong class="{% if r['rasio'] > 1.05 %}text-success{% endif %}">
+                            {{ "%.2f"|format(r["rasio"]) }} kali
+                        </strong>
+                        lebih baik dibanding cara pertama. Angka "serangan lolos"
+                        menunjukkan berapa banyak serangan yang gagal terdeteksi.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Ringkasan Seluruh Level</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="align-middle">Level</th>
+                        <th rowspan="2" class="align-middle">Gangguan</th>
+                        <th colspan="{{ jumlah_model }}" class="text-center">F1-Score</th>
+                        <th rowspan="2" class="align-middle text-end">Rasio</th>
+                    </tr>
+                    <tr>
+                        {% for m in info_model %}
+                        <th class="text-end small">{{ m.nama }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in ringkas %}
+                    <tr {% if loop.first %}class="table-light"{% endif %}>
+                        <td class="fw-semibold">{{ r["nama"] }}</td>
+                        <td><span class="badge bg-secondary">{{ r["level_persen"] }}</span></td>
+                        {% for m in info_model %}
+                        {% set nilai = r["metrik"][m.nama] %}
+                        <td class="text-end {% if loop.last %}fw-semibold{% endif %}">
+                            {% if nilai %}{{ "%.4f"|format(nilai["f1"]) }}{% else %}-{% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="text-end">
+                            {% if r.get("rasio") %}
+                            <span class="fw-semibold {% if r['rasio'] > 1.05 %}text-success{% endif %}">
+                                {{ "%.2f"|format(r["rasio"]) }}x
+                            </span>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="alert alert-light border small mt-3 mb-0">
+            <strong>Cara membaca tabel ini.</strong>
+            Angka F1-Score menggabungkan dua hal sekaligus: seberapa banyak serangan
+            yang berhasil ditemukan, dan seberapa sering sistem salah menuduh lalu
+            lintas biasa sebagai serangan. Semakin mendekati 1, semakin baik.
+            Kolom rasio menunjukkan berapa kali lipat cara terakhir mengungguli cara
+            pertama pada tingkat gangguan tersebut.
+            <br><br>
+            Perlu diperhatikan, nilai accuracy bisa tetap terlihat tinggi meskipun
+            model gagal mengenali hampir seluruh serangan. Ini karena sebagian besar
+            data memang lalu lintas biasa, sehingga menebak semuanya sebagai biasa
+            sudah menghasilkan angka accuracy yang besar. Itulah sebabnya F1-Score
+            dan Recall lebih layak dijadikan acuan.
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const inputBerkas = document.getElementById('fileKetahanan');
+    if (inputBerkas) {
+        inputBerkas.addEventListener('change', function () {
+            document.getElementById('namaBerkas').textContent =
+                this.files.length ? this.files[0].name : '';
+        });
+    }
+
+    const formUji = document.getElementById('formKetahanan');
+    if (formUji) {
+        formUji.addEventListener('submit', function () {
+            const t = document.getElementById('tombolUji');
+            t.disabled = true;
+            t.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
+        });
+    }
+</script>
+
+{% if hasil %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const semuaHasil = {{ hasil|tojson }};
+const infoModel = {{ info_model|tojson }};
+
+const PETA_WARNA = {
+    secondary: '#EF4444',
+    info: '#F59E0B',
+    primary: '#3B82F6',
+    warning: '#F59E0B'
+};
+
+const label = [...new Set(semuaHasil.map(d => d.level_persen))];
+
+const dataset = infoModel.map(m => ({
+    label: m.nama,
+    data: label.map(l => {
+        const d = semuaHasil.find(x => x.metode === m.nama && x.level_persen === l);
+        return d ? d.f1 : null;
+    }),
+    borderColor: PETA_WARNA[m.warna] || '#6B7280',
+    backgroundColor: 'transparent',
+    borderWidth: 2.5,
+    pointRadius: 4,
+    pointHoverRadius: 7,
+    tension: 0.25,
+    fill: false
+}));
+
+Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
+Chart.defaults.font.size = 12;
+
+new Chart(document.getElementById('grafikKetahanan'), {
+    type: 'line',
+    data: { labels: label, datasets: dataset },
+    options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { position: 'top', align: 'end' },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(6)
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true, max: 1.05,
+                title: { display: true, text: 'F1-Score' }
+            },
+            x: {
+                title: { display: true, text: 'Tingkat gangguan (kelipatan simpangan baku fitur)' }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

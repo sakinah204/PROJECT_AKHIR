@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}History - GoldenEye Evaluation{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-1">
+    <div>
+        <h2 class="fw-bold mb-0">History</h2>
+        <p class="text-muted small mb-3">Riwayat semua evaluasi yang pernah dijalankan</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if not evaluations %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox" style="font-size:40px;"></i>
+            <p class="mt-2 mb-0">Belum ada riwayat evaluasi. Jalankan evaluasi pertama dari halaman Dashboard.</p>
+        </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>File</th>
+                        <th>Tahun</th>
+                        <th>Waktu Evaluasi</th>
+                        <th>Total Baris</th>
+                        <th>Accuracy</th>
+                        <th>F1-Score</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in evaluations %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="fw-semibold">{{ e["filename"] }}</td>
+                        <td><span class="badge-year">{{ e["year"] }}</span></td>
+                        <td>{{ e["evaluated_at"] }}</td>
+                        <td>{{ "{:,}".format(e["total_rows"]) }}</td>
+                        <td>
+                            {% if e["has_ground_truth"] %}
+                                {{ e["accuracy"]|pct }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if e["has_ground_truth"] %}
+                                {{ e["f1_"]|pct }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1 align-items-center">
+                                <!-- Tombol View -->
+                                <a href="{{ url_for('result', evaluation_id=e['id']) }}" class="btn btn-sm btn-primary">View</a>
+                                
+                                <!-- Tombol Hapus -->
+                                <form action="{{ url_for('delete_evaluation', evaluation_id=e['id']) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus riwayat evaluasi ini?');" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                </form>
+                            </div>
+                       </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

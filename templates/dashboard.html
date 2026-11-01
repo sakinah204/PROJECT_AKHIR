@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - GoldenEye Evaluation{% endblock %}
+
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <h2 class="fw-bold mb-0">Dashboard</h2>
+</div>
+
+{% if error %}
+<div class="alert alert-danger d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+</div>
+{% endif %}
+{% if warning %}
+<div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-circle-fill me-2"></i> {{ warning }}
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-md-9">
+                <h5 class="fw-bold mb-3">Evaluasi Generalisasi Model Random Forest DoS GoldenEye</h5>
+                <p class="text-muted mb-2">
+                    Sistem ini digunakan untuk menguji apakah model tersebut masih mampu mengenali trafik
+                    <strong>BENIGN</strong> dan <strong>DoS GoldenEye</strong> secara konsisten pada dataset
+                    yang diambil dari <strong>data yang tidak pernah dilihatnya</strong> — mengukur seberapa baik model
+                    melakukan generalisasi seiring waktu, bukan hanya menghafal pola data lamanya.
+                </p>
+                <ul class="text-muted small mb-0 ps-3">
+                    <li>Tahun dataset dideteksi otomatis dari nama file (contoh: <code>CICIDS2018_Test.csv</code> → 2018).</li>
+                    <li>CSV harus memiliki kolom <code>Label</code> berisi <code>BENIGN</code> / <code>DoS GoldenEye</code> (atau <code>0</code>/<code>1</code>) agar akurasi dapat dihitung.</li>
+                </ul>
+            </div>
+            <div class="col-md-3 text-center">
+                <i class="bi bi-graph-up-arrow" style="font-size:64px;color:#2563eb;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <form action="{{ url_for('evaluate') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+            <div class="dropzone" id="dropzone">
+                <i class="bi bi-cloud-arrow-up d-block mb-3"></i>
+                <h5 class="fw-bold">Upload file CSV dataset uji (tahun tertentu)</h5>
+                <p class="text-muted mb-3">
+                    Sertakan tahun pada nama file, mis. <code>HTTP_DoS_2017.csv</code>.
+                </p>
+
+                <label for="fileInput" class="btn btn-primary px-4">
+                    <i class="bi bi-file-earmark-arrow-up me-1"></i> Pilih File CSV
+                </label>
+                <input type="file" id="fileInput" name="file" accept=".csv" class="d-none" required>
+
+                <div id="fileNameLabel" class="fw-semibold mt-3"></div>
+                <p class="text-muted small mt-2 mb-0">Hanya file .csv yang diperbolehkan</p>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn">
+                    <i class="bi bi-play-fill me-1"></i> MULAI EVALUASI
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <a href="{{ url_for('history') }}" class="text-decoration-none">
+            <div class="card h-100">
+                <div class="card-body">
+                    <i class="bi bi-clock-history text-primary fs-3"></i>
+                    <h6 class="fw-bold mt-2 mb-1 text-dark">Riwayat Evaluasi</h6>
+                    <p class="text-muted small mb-0">Lihat semua dataset yang pernah dievaluasi.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="{{ url_for('about') }}" class="text-decoration-none">
+            <div class="card h-100">
+                <div class="card-body">
+                    <i class="bi bi-info-circle text-primary fs-3"></i>
+                    <h6 class="fw-bold mt-2 mb-1 text-dark">Tentang Model</h6>
+                    <p class="text-muted small mb-0">Detail algoritma dan feature importance.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', function(){
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
+    });
+</script>
+{% endblock %}

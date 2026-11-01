@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% block title %}Hasil Evaluasi - GoldenEye Evaluation{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-1">
+    <div>
+        <h2 class="fw-bold mb-0">Hasil Evaluasi</h2>
+        <p class="text-muted small mb-3">Evaluasi / Hasil</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('ketahanan') }}" class="btn btn-warning">
+            <i class="bi bi-shield-exclamation me-1"></i> Uji Ketahanan
+        </a>
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Kembali ke History
+        </a>
+    </div>
+</div>
+
+{% if warning %}
+<div class="alert alert-warning d-flex align-items-center">
+    <i class="bi bi-exclamation-circle-fill me-2"></i> {{ warning }}
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-muted small fw-semibold">FILE</div>
+                <div class="fw-bold">{{ ev["filename"] }}</div>
+            </div>
+            <div class="col-md-2">
+                <div class="text-muted small fw-semibold">TAHUN</div>
+                <div><span class="badge-year">{{ ev["year"] }}</span></div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small fw-semibold">WAKTU EVALUASI</div>
+                <div class="fw-bold">{{ ev["evaluated_at"] }}</div>
+            </div>
+            <div class="col-md-2">
+                <div class="text-muted small fw-semibold">TOTAL FLOW</div>
+                <div class="fw-bold">{{ "{:,}".format(ev["total_rows"]) }}</div>
+            </div>
+            <div class="col-md-2">
+                <div class="text-muted small fw-semibold">DIEVALUASI</div>
+                <div class="fw-bold">{{ "{:,}".format(ev["evaluated_rows"]) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if ev["has_ground_truth"] %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-blue"><i class="bi bi-bullseye"></i></div>
+                <div class="metric-label">Accuracy</div>
+                <div class="metric-value">{{ ev["accuracy"]|pct }}</div>        
+            </div>       
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-green"><i class="bi bi-check2-circle"></i></div>
+                <div class="metric-label">Precision</div>
+                <div class="metric-value">{{ ev["precision_"]|pct }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-amber"><i class="bi bi-radar"></i></div>
+                <div class="metric-label">Recall</div>
+                <div class="metric-value">{{ ev["recall_"]|pct }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-red"><i class="bi bi-layers-half"></i></div>
+                <div class="metric-label">F1-Score</div>
+                <div class="metric-value">{{ ev["f1_"]|pct }}</div>            
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Confusion Matrix</h6>
+                <div class="cm-grid">
+                    <div class="cm-label"></div>
+                    <div class="cm-label">Prediksi: BENIGN</div>
+                    <div class="cm-label">Prediksi: DoS GoldenEye</div>
+
+                    <div class="cm-label">Aktual: BENIGN</div>
+                    <div class="cm-cell cm-tn">
+                        <span class="cm-value">{{ ev["tn"] }}</span>
+                        <span class="cm-sub">True Negative</span>
+                    </div>
+                    <div class="cm-cell cm-fp">
+                        <span class="cm-value">{{ ev["fp"] }}</span>
+                        <span class="cm-sub">False Positive</span>
+                    </div>
+
+                    <div class="cm-label">Aktual: DoS GoldenEye</div>
+                    <div class="cm-cell cm-fn">
+                        <span class="cm-value">{{ ev["fn"] }}</span>
+                        <span class="cm-sub">False Negative</span>
+                    </div>
+                    <div class="cm-cell cm-tp">
+                        <span class="cm-value">{{ ev["tp"] }}</span>
+                        <span class="cm-sub">True Positive</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Ringkasan</h6>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr><th class="text-muted fw-normal">Label kolom terdeteksi</th><td class="fw-semibold">{{ ev["label_column"] }}</td></tr>
+                        <tr><th class="text-muted fw-normal">Baris dievaluasi</th><td class="fw-semibold">{{ "{:,}".format(ev["evaluated_rows"]) }} / {{ "{:,}".format(ev["total_rows"]) }}</td></tr>
+                        <tr><th class="text-muted fw-normal">Label tidak dikenali (diabaikan)</th><td class="fw-semibold">{{ ev["unmapped_rows"] }}</td></tr>
+                        <tr><th class="text-muted fw-normal">Prediksi BENIGN</th><td class="fw-semibold">{{ "{:,}".format(ev["benign_count"]) }}</td></tr>
+                        <tr><th class="text-muted fw-normal">Prediksi DoS GoldenEye</th><td class="fw-semibold">{{ "{:,}".format(ev["dos_count"]) }}</td></tr>
+                        <tr><th class="text-muted fw-normal">Prediksi benar</th><td class="fw-semibold text-success">{{ ev["tp"] + ev["tn"] }}</td></tr>
+                        <tr><th class="text-muted fw-normal">Prediksi salah</th><td class="fw-semibold text-danger">{{ ev["fp"] + ev["fn"] }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">
+    <i class="bi bi-info-circle me-1"></i>
+    Tidak ada kolom Label ground-truth di file ini — hanya hasil prediksi yang ditampilkan,
+    akurasi tidak dapat dihitung.
+</div>
+{% endif %}
+
+<div id="panel-hasil">
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="{{ url_for('result', evaluation_id=ev['id']) }}" class="row g-3 align-items-end" id="filterForm">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Filter Hasil</label>
+                <select class="form-select" name="filter" onchange="document.getElementById('filterForm').requestSubmit()">
+                    <option value="Semua" {% if result_filter == "Semua" %}selected{% endif %}>Semua</option>
+                    <option value="BENIGN" {% if result_filter == "BENIGN" %}selected{% endif %}>BENIGN (Normal)</option>
+                    <option value="DoS GoldenEye" {% if result_filter == "DoS GoldenEye" %}selected{% endif %}>DoS GoldenEye (Serangan)</option>
+                    {% if ev["has_ground_truth"] %}
+                    <option value="Prediksi Benar" {% if result_filter == "Prediksi Benar" %}selected{% endif %}>Prediksi Benar</option>
+                    <option value="Prediksi Salah" {% if result_filter == "Prediksi Salah" %}selected{% endif %}>Prediksi Salah</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Search IP Address</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Masukkan IP Address">
+                    <button class="btn btn-primary" type="submit">Cari</button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Rows per page</label>
+                <select class="form-select" name="rows" onchange="document.getElementById('filterForm').requestSubmit()">
+                    {% for r in [5, 10, 25, 50] %}
+                    <option value="{{ r }}" {% if rows == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        {% if ev["has_ground_truth"] %}
+        <hr class="my-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted small fw-semibold me-1">Pintasan:</span>
+
+            <a href="{{ url_for('result', evaluation_id=ev['id'], filter='Semua', rows=rows) }}"
+               class="ajax-link btn btn-sm {% if result_filter == 'Semua' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                Semua ({{ "{:,}".format(ev["total_rows"]) }})
+            </a>
+
+            <a href="{{ url_for('result', evaluation_id=ev['id'], filter='Prediksi Benar', rows=rows) }}"
+               class="ajax-link btn btn-sm {% if result_filter == 'Prediksi Benar' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="bi bi-check-circle me-1"></i>
+                Prediksi Benar ({{ "{:,}".format(ev["tp"] + ev["tn"]) }})
+            </a>
+
+            <a href="{{ url_for('result', evaluation_id=ev['id'], filter='Prediksi Salah', rows=rows) }}"
+               class="ajax-link btn btn-sm {% if result_filter == 'Prediksi Salah' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                <i class="bi bi-x-circle me-1"></i>
+                Prediksi Salah ({{ "{:,}".format(ev["fp"] + ev["fn"]) }})
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Source IP</th>
+                        <th>Destination IP</th>
+                        <th>Protocol</th>
+                        <th>Label Aktual</th>
+                        <th>Prediksi</th>
+                        <th>Hasil</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in flows %}
+                    <tr>
+                        <td>{{ start_index + loop.index0 }}</td>
+                        <td>{{ f["source_ip"] }}</td>
+                        <td>{{ f["dest_ip"] }}</td>
+                        <td>{{ f["protocol"] }}</td>
+                        <td>
+                            {% if f["true_label"] == "BENIGN" %}
+                                <span class="badge-benign">BENIGN</span>
+                            {% elif f["true_label"] == "DoS GoldenEye" %}
+                                <span class="badge-dos">DoS GoldenEye</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if f["prediction"] == "BENIGN" %}
+                                <span class="badge-benign">BENIGN</span>
+                            {% else %}
+                                <span class="badge-dos">DoS GoldenEye</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if f["correct"] == 1 %}
+                                <span class="badge-correct"><i class="bi bi-check-lg"></i> Benar</span>
+                            {% elif f["correct"] == 0 %}
+                                <span class="badge-wrong"><i class="bi bi-x-lg"></i> Salah</span>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                    data-bs-target="#flowDetailModal" data-flow-id="{{ f['id'] }}">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">Tidak ada data yang cocok dengan filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if total_pages > 1 %}
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">
+        Menampilkan {{ start_index }}–{{ end_index }} dari {{ "{:,}".format(total) }} flow
+    </div>
+    <nav>
+        <ul class="pagination mb-0">
+            <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                <a class="ajax-link page-link" href="{{ url_for('result', evaluation_id=ev['id'], filter=result_filter, search=search, rows=rows, page=page - 1) }}">&lsaquo;</a>
+            </li>
+            {% for p in page_window %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="ajax-link page-link" href="{{ url_for('result', evaluation_id=ev['id'], filter=result_filter, search=search, rows=rows, page=p) }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                <a class="ajax-link page-link" href="{{ url_for('result', evaluation_id=ev['id'], filter=result_filter, search=search, rows=rows, page=page + 1) }}">&rsaquo;</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endif %}
+</div>
+{% endblock %}

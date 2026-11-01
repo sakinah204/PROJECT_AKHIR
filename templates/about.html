@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}About - GoldenEye Evaluation{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-1">Tentang Sistem Ini</h2>
+<p class="text-muted small mb-4">Cara kerja model dan pengujian yang dilakukan</p>
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Apa yang dikerjakan sistem ini?</h5>
+        <p class="text-muted mb-2">
+            Sistem ini membaca catatan lalu lintas jaringan, lalu menentukan mana yang
+            merupakan lalu lintas biasa dan mana yang merupakan serangan
+            <strong>DoS GoldenEye</strong>. Serangan jenis ini bekerja dengan membanjiri
+            sebuah situs dengan permintaan palsu sampai situs tersebut kewalahan dan tidak
+            bisa melayani pengunjung asli.
+        </p>
+        <p class="text-muted mb-0">
+            Penentuan dilakukan oleh model <strong>Random Forest</strong>, yaitu kumpulan
+            {{ n_estimators }} pohon keputusan yang masing-masing memberikan suara, lalu
+            hasil akhirnya diambil dari suara terbanyak.
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Bagaimana fitur dipilih?</h6>
+        <p class="text-muted small mb-3">
+            Setiap catatan lalu lintas punya puluhan angka yang menggambarkan sifatnya:
+            berapa lama berlangsung, berapa besar paketnya, berapa jeda antar paket, dan
+            seterusnya. Angka-angka ini disebut <em>fitur</em>. Tidak semuanya berguna,
+            sehingga perlu dipilih yang terbaik. Sistem ini memakai dua ukuran sekaligus.
+        </p>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <div class="fw-semibold mb-2">
+                        <i class="bi bi-1-circle me-1"></i> Seberapa sering dipakai
+                    </div>
+                    <div class="text-muted small">
+                        Diukur dengan <em>Gini importance</em>. Ukuran ini melihat seberapa
+                        sering sebuah fitur dipakai pohon keputusan untuk memisahkan lalu
+                        lintas biasa dari serangan.
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <div class="fw-semibold mb-2">
+                        <i class="bi bi-2-circle me-1"></i> Seberapa jelas memisahkan
+                    </div>
+                    <div class="text-muted small">
+                        Diukur dengan <em>Cohen's d</em>. Ukuran ini melihat seberapa jauh
+                        jarak antara nilai rata-rata lalu lintas biasa dan nilai rata-rata
+                        serangan, dibandingkan dengan seberapa menyebar nilainya.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border small mb-3">
+            <strong>Mengapa perlu dua ukuran?</strong><br>
+            Sebuah fitur bisa saja sering dipakai pohon keputusan, tetapi sebenarnya
+            memisahkan dengan sangat tipis. Fitur seperti itu terlihat penting, padahal
+            mudah keliru begitu nilainya bergeser sedikit. Dengan menambahkan ukuran kedua,
+            fitur yang terpilih harus memenuhi keduanya: sering dipakai <em>dan</em>
+            memisahkan dengan jelas.
+        </div>
+
+        <p class="text-muted small mb-0">
+            Kedua ukuran disetarakan terlebih dahulu, lalu digabungkan. Dari seluruh fitur
+            yang tersedia, dipilih <strong>{{ n_features }} fitur</strong> dengan nilai
+            gabungan tertinggi.
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Mengapa model dilatih dengan data yang sengaja diganggu?</h6>
+        <p class="text-muted small mb-3">
+            Data yang dipakai untuk melatih model berasal dari serangan yang dijalankan
+            dengan pengaturan yang sama persis berulang kali. Akibatnya, seluruh catatan
+            serangan punya angka yang nyaris identik satu sama lain.
+        </p>
+        <p class="text-muted small mb-3">
+            Model yang belajar dari data seperti itu menjadi terlalu kaku. Ia hanya
+            mengenali angka yang persis sama seperti yang pernah dilihatnya. Begitu ada
+            serangan dengan angka yang sedikit berbeda, misalnya karena kondisi jaringan
+            tidak sama atau penyerang sengaja mengubah polanya, model gagal mengenalinya.
+        </p>
+        <p class="text-muted small mb-3">
+            Untuk mengatasi hal ini, data latih diperbanyak dengan salinan yang angkanya
+            digeser sedikit secara acak pada empat tingkat: 2%, 5%, 10%, dan 20%.
+            Statusnya tetap ditandai sebagai serangan, karena catatan yang angkanya
+            bergeser sedikit tetaplah serangan. Model jadi terbiasa melihat variasi.
+        </p>
+        <div class="alert alert-light border small mb-0">
+            <strong>Yang perlu dicatat:</strong> hanya data latih yang diperbanyak.
+            Data yang dipakai untuk menguji tetap asli, sehingga hasil pengujian tetap jujur.
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-blue"><i class="bi bi-diagram-3"></i></div>
+                <div class="metric-label">Metode</div>
+                <div class="metric-value" style="font-size:20px;">Random Forest</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-green"><i class="bi bi-tree"></i></div>
+                <div class="metric-label">Jumlah Pohon</div>
+                <div class="metric-value">{{ n_estimators }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-blue"><i class="bi bi-arrows-expand"></i></div>
+                <div class="metric-label">Kedalaman Pohon</div>
+                <div class="metric-value">{{ max_depth }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="metric-icon icon-red"><i class="bi bi-grid-3x3-gap"></i></div>
+                <div class="metric-label">Fitur Dipakai</div>
+                <div class="metric-value">{{ n_features }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if importances %}
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-1">Fitur yang paling menentukan</h6>
+        <p class="text-muted small mb-3">
+            Semakin panjang batangnya, semakin besar peran fitur tersebut dalam menentukan
+            apakah sebuah catatan lalu lintas termasuk serangan atau bukan.
+        </p>
+        {% for imp in importances %}
+        <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+                <span>{{ imp.name }}</span>
+                <span class="text-muted">{{ "%.4f"|format(imp.value) }}</span>
+            </div>
+            <div class="imp-bar-track">
+                <div class="imp-bar-fill" style="width:{{ imp.pct }}%;"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if daftar_fitur %}
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Daftar lengkap fitur yang dipakai</h6>
+        <div class="row">
+            {% for f in daftar_fitur %}
+            <div class="col-md-6 col-lg-4 mb-1">
+                <span class="text-muted small">{{ loop.index }}. {{ f }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Dua jenis pengujian yang tersedia</h6>
+
+        <div class="mb-4">
+            <div class="fw-semibold mb-1">
+                <i class="bi bi-clipboard-data me-1"></i> Evaluasi
+            </div>
+            <div class="text-muted small">
+                Menguji apakah model tetap dapat mengenali serangan pada data lalu lintas
+                yang belum pernah dilihatnya. Unggah berkas CSV, lalu sistem akan
+                menampilkan berapa banyak yang berhasil dikenali dan berapa yang keliru.
+            </div>
+        </div>
+
+        <div>
+            <div class="fw-semibold mb-1">
+                <i class="bi bi-shield-exclamation me-1"></i> Uji Ketahanan
+            </div>
+            <div class="text-muted small">
+                Menguji apa yang terjadi bila angka-angka pada data lalu lintas digeser
+                sedikit, menyerupai kondisi ketika penyerang mengubah pola serangannya
+                agar tidak terdeteksi. Pengujian dilakukan pada lima tingkat gangguan,
+                dan hasilnya dibandingkan antara tiga cara pemilihan fitur yang berbeda.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Dua kemungkinan hasil</h6>
+        <div class="mb-2">
+            <span class="badge-benign">BENIGN</span>
+            <span class="text-muted ms-2">
+                Lalu lintas jaringan biasa, tidak berbahaya.
+            </span>
+        </div>
+        <div>
+            <span class="badge-dos">DoS GoldenEye</span>
+            <span class="text-muted ms-2">
+                Terindikasi serangan yang membanjiri layanan dengan permintaan palsu.
+            </span>
+        </div>
+    </div>
+</div>
+{% endblock %}

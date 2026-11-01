@@ -1,0 +1,72 @@
+<div class="row g-4 p-2">
+    <div class="col-md-6">
+        <h6 class="fw-bold mb-3">Informasi Umum</h6>
+        <table class="table table-sm">
+            <tbody>
+                <tr><th class="text-muted fw-normal" style="width:45%">Source IP</th><td class="fw-semibold">{{ flow["source_ip"] }}</td></tr>
+                <tr><th class="text-muted fw-normal">Source Port</th><td class="fw-semibold">{{ flow["source_port"] }}</td></tr>
+                <tr><th class="text-muted fw-normal">Destination IP</th><td class="fw-semibold">{{ flow["dest_ip"] }}</td></tr>
+                <tr><th class="text-muted fw-normal">Destination Port</th><td class="fw-semibold">{{ flow["dest_port"] }}</td></tr>
+                <tr><th class="text-muted fw-normal">Protocol</th><td class="fw-semibold">{{ flow["protocol"] }}</td></tr>
+                <tr><th class="text-muted fw-normal">Flow Duration</th><td class="fw-semibold">{{ "%.2f"|format(flow["flow_duration"]) }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h6 class="fw-bold mb-3">Fitur (sebagian)</h6>
+        <table class="table table-sm">
+            <tbody>
+                {% for name, value in feature_items %}
+                <tr>
+                    <th class="text-muted fw-normal" style="width:60%">{{ name }}</th>
+                    <td class="fw-semibold">
+                        {% if value is number %}
+                            {{ "{:,.0f}".format(value) if value == value|round(0) else "{:,.3f}".format(value) }}
+                        {% else %}
+                            {{ value }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<hr class="mx-2">
+
+<div class="p-2">
+    <h6 class="fw-bold mb-2">Label Aktual vs Prediksi</h6>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div>
+            <div class="text-muted small mb-1">Label Aktual</div>
+            {% if flow["true_label"] == "BENIGN" %}
+                <span class="badge-benign fs-6">BENIGN</span>
+            {% elif flow["true_label"] == "DoS GoldenEye" %}
+                <span class="badge-dos fs-6">DoS GoldenEye</span>
+            {% else %}
+                <span class="text-muted">Tidak tersedia</span>
+            {% endif %}
+        </div>
+        <i class="bi bi-arrow-right fs-4 text-muted"></i>
+        <div>
+            <div class="text-muted small mb-1">Prediksi Model</div>
+            {% if flow["prediction"] == "BENIGN" %}
+                <span class="badge-benign fs-6">BENIGN</span>
+            {% else %}
+                <span class="badge-dos fs-6">DoS GoldenEye</span>
+            {% endif %}
+        </div>
+        <div class="ms-auto">
+            {% if flow["correct"] == 1 %}
+                <span class="badge-correct fs-6"><i class="bi bi-check-lg"></i> Prediksi Benar</span>
+            {% elif flow["correct"] == 0 %}
+                <span class="badge-wrong fs-6"><i class="bi bi-x-lg"></i> Prediksi Salah</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="text-muted small mt-3">
+        Probabilitas: <strong>{{ "%.4f"|format(flow["probability"]) }}</strong>
+        ({{ flow["probability"]|pct }})
+    </div>
+</div>
